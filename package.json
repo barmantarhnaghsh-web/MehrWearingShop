@@ -1,0 +1,29 @@
+{
+  "name": "mehrwearingshop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MehrWearingShop - full-stack Persian/English e-commerce platform (API + web storefront)",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @mwr/api & npm run dev -w @mwr/web & wait",
+    "dev:api": "npm run dev -w @mwr/api",
+    "dev:web": "npm run dev -w @mwr/web",
+    "build": "npm run build -w @mwr/api && npm run build -w @mwr/web",
+    "test": "npm run test -w @mwr/api && npm run test -w @mwr/web",
+    "lint": "npm run lint -w @mwr/api && npm run lint -w @mwr/web",
+    "typecheck": "npm run typecheck -w @mwr/api && npm run typecheck -w @mwr/web",
+    "db:migrate": "npm run db:migrate -w @mwr/api",
+    "db:seed": "npm run db:seed -w @mwr/api",
+    "db:reset": "npm run db:reset -w @mwr/api",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,yml}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}

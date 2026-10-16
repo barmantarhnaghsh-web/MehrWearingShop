@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  verify:
+    name: Typecheck · Test · Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mwr
+          POSTGRES_PASSWORD: mwr
+          POSTGRES_DB: mwrshop
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U mwr" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The Prisma client's postinstall cannot locate a schema inside a monorepo
+      # workspace, so it ships the ungenerated stub. Generate it explicitly before
+      # anything that typechecks against the generated types.
+      - name: Generate Prisma client
+        run: npm run prisma:generate -w @mwr/api
+
+      - name: API typecheck
+        run: npm run typecheck -w @mwr/api
+
+      - name: Web typecheck
+        run: npm run typecheck -w @mwr/web
+
+      - name: Unit tests
+        run: npm run test -w @mwr/api
+
+      - name: Prisma validate + migrate
+        env:
+          DATABASE_URL: postgresql://mwr:mwr@localhost:5432/mwrshop?schema=public
+        run: |
+          npx prisma validate --schema apps/api/prisma/schema.prisma
+          npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+
+      - name: Seed (proves schema ↔ seed stay in sync)
+        env:
+          DATABASE_URL: postgresql://mwr:mwr@localhost:5432/mwrshop?schema=public
+        run: npm run db:seed -w @mwr/api
+
+      - name: Build API
+        run: npm run build -w @mwr/api
+
+      - name: Build web
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+        run: npm run build -w @mwr/web
